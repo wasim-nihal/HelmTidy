@@ -1,16 +1,15 @@
 package models
 
 import (
+	"dangling-tpls/src/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 type TplDefinations struct {
 	DefinationMap map[string]string
-	lock          sync.Mutex
 }
 
 var TplDefs *TplDefinations
@@ -19,7 +18,6 @@ func InitTplDefinations() {
 	if TplDefs == nil {
 		TplDefs = &TplDefinations{
 			DefinationMap: make(map[string]string),
-			lock:          sync.Mutex{},
 		}
 	}
 }
@@ -40,7 +38,7 @@ func (t *TplDefinations) Populate(dir string) {
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
+		log.Printf("error pupulating the tpl definations list. reason %s\n", err.Error())
 	}
 }
 
@@ -50,15 +48,15 @@ func (t *TplDefinations) populateTplDefinations(file string) bool {
 		log.Println("Error opening file:", err)
 		return false
 	}
-	commentless_content := regex_comments.ReplaceAll(content, []byte(""))
-	allMatches := regex_defination.FindAll(commentless_content, -1)
+	commentless_content := utils.RgxTplComments.ReplaceAll(content, []byte(""))
+	allMatches := utils.RgxTplDefinations.FindAll(commentless_content, -1)
 	if allMatches == nil {
 		return false
 	} else {
 		for _, v := range allMatches {
-			x := regex_defination.FindSubmatch(v)
-			if len(x) > 1 {
-				t.DefinationMap[string(x[1])] = string(file)
+			sm := utils.RgxTplDefinations.FindSubmatch(v)
+			if len(sm) > 1 {
+				t.DefinationMap[string(sm[1])] = string(file)
 			}
 		}
 		return true

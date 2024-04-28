@@ -37,10 +37,8 @@ func (t *ListOfFiles) Populate(dir string, wg *sync.WaitGroup) {
 		}
 		if info.IsDir() {
 			if visitedDirs[path] {
-				// Already visited, skip
 				return nil
 			}
-			// Mark directory as visited
 			visitedDirs[path] = true
 			err := filepath.Walk(path, visit)
 			if err != nil {

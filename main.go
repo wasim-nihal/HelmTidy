@@ -1,9 +1,9 @@
 package main
 
 import (
-	"dangling-tpls/models"
+	"dangling-tpls/src/models"
+	"dangling-tpls/src/utils"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -11,26 +11,38 @@ import (
 )
 
 var (
-	chartPath       = flag.String("p", "", "path of the chart that has to be scanned for unused tpls")
-	dependentCharts = flag.String("dependentCharts", "", "a comma saperated string of absolute paths of dependent charts that make use of tpls from the current '-p' chart")
+	chartPath       = flag.String("p", "", `path of the chart that has to be scanned for the unused tpls. It can be either relative/absolute/http url. If the value starts with 'http://' or 'https://', then a http request is made to get the chart.`)
+	dependentCharts = flag.String("dependentCharts", "", `a list comma saperated paths of dependent charts that make use of tpls from the current '-p' chart. Values can be either relative/absolute/http url. If the value starts with 'http://' or 'https://', then a http request is made to get the chart.`)
 	exitWithNonZero = flag.Bool("exitWithNonZero", false, "flag indicating whether to exit with a non zero error code in the case if dangling tpls are found.")
 )
 
 func main() {
-	// TODO: panic if chartPath is not set
 	flag.Parse()
+	if *chartPath == "" {
+		panic("chart path '-p' cannot be empty")
+	}
+	if strings.HasPrefix(*chartPath, "http://") || strings.HasPrefix(*chartPath, "https://") {
+		*chartPath = utils.GetChartHttp(*chartPath)
+	}
+	// initialize model objs
 	models.InitFileList()
 	models.InitTplDefinations()
 	models.InitTplUsages()
 	models.InitUnusedTpls()
 	var chartsToBeScannedForTplUsages []string
+	var dependentChartList []string
 	if *dependentCharts != "" {
-		chartsToBeScannedForTplUsages = strings.Split(*dependentCharts, ",")
+		dependentChartList = strings.Split(*dependentCharts, ",")
 	}
-	chartsToBeScannedForTplUsages = append(chartsToBeScannedForTplUsages, *chartPath)
+	dependentChartList = append(dependentChartList, *chartPath)
 	log.Println("Scanning for tpl usages for the charts below:")
-	for _, path := range chartsToBeScannedForTplUsages {
+	for _, path := range dependentChartList {
+		localPath := path
+		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+			localPath = utils.GetChartHttp(path)
+		}
 		log.Println(path)
+		chartsToBeScannedForTplUsages = append(chartsToBeScannedForTplUsages, localPath)
 	}
 	wg := &sync.WaitGroup{}
 	wg.Add(len(chartsToBeScannedForTplUsages))
@@ -41,14 +53,17 @@ func main() {
 
 	models.TplDefs.Populate(*chartPath)
 	models.TplUsgs.Populate()
-	models.UnusedTpls.Populate()
+	models.UnusedTpls.Calculate()
 	// print
 	var result [][]string
 	result = append(result, []string{"DANGLING TPL NAME", "FILE"})
+
 	for key, value := range models.UnusedTpls.TplUnusedMap {
 		result = append(result, []string{key, value})
 	}
-	printTable(result)
+
+	utils.PrintTable(result)
+
 	if len(models.UnusedTpls.TplUnusedMap) > 0 {
 		if *exitWithNonZero {
 			os.Exit(1)
@@ -56,36 +71,5 @@ func main() {
 			os.Exit(0)
 		}
 	}
-}
 
-func printTable(data [][]string) {
-	// Calculate column widths
-	colWidths := make([]int, len(data[0]))
-	for _, row := range data {
-		for i, cell := range row {
-			width := len(cell)
-			if width > colWidths[i] {
-				colWidths[i] = width
-			}
-		}
-	}
-
-	// Print top border
-	printBorder(colWidths)
-
-	// Print table content
-	for _, row := range data {
-		for i, cell := range row {
-			fmt.Printf("| %-*s ", colWidths[i], cell)
-		}
-		fmt.Println("|")
-		printBorder(colWidths)
-	}
-}
-
-func printBorder(colWidths []int) {
-	for _, width := range colWidths {
-		fmt.Print("+" + strings.Repeat("-", width+2))
-	}
-	fmt.Println("+")
 }

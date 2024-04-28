@@ -18,7 +18,7 @@ func InitUnusedTpls() {
 	}
 }
 
-func (u *TplUnused) Populate() {
+func (u *TplUnused) Calculate() {
 	for key, val := range GetTplDefinations().DefinationMap {
 		if _, ok := TplUsgs.TplUsageMap[key]; !ok {
 			UnusedTpls.TplUnusedMap[key] = val

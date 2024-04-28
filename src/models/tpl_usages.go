@@ -1,6 +1,7 @@
 package models
 
 import (
+	"dangling-tpls/src/utils"
 	"flag"
 	"log"
 	"os"
@@ -47,16 +48,16 @@ func (t *TplUsages) populateTplUsages(files <-chan string, wg *sync.WaitGroup) {
 		if err != nil {
 			log.Println("Error opening file:", err)
 		}
-		yaml_commentless_content := regex_yaml_comments.ReplaceAll(content, []byte(""))
-		commentless_content := regex_comments.ReplaceAll(yaml_commentless_content, []byte(""))
-		allMatches := regex_tpl_usage.FindAll(commentless_content, -1)
+		yaml_commentless_content := utils.RgxYamlComments.ReplaceAll(content, []byte(""))
+		commentless_content := utils.RgxTplComments.ReplaceAll(yaml_commentless_content, []byte(""))
+		allMatches := utils.RgxTplUsages.FindAll(commentless_content, -1)
 		if allMatches == nil {
 		} else {
 			for _, v := range allMatches {
-				x := regex_tpl_usage.FindSubmatch(v)
-				if len(x) > 2 {
+				sm := utils.RgxTplUsages.FindSubmatch(v)
+				if len(sm) > 2 {
 					t.lock.Lock()
-					t.TplUsageMap[string(x[2])] = string(file)
+					t.TplUsageMap[string(sm[2])] = string(file)
 					t.lock.Unlock()
 				}
 			}
