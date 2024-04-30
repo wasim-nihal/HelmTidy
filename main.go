@@ -22,7 +22,7 @@ func main() {
 		panic("chart path '-p' cannot be empty")
 	}
 	if strings.HasPrefix(*chartPath, "http://") || strings.HasPrefix(*chartPath, "https://") {
-		*chartPath = utils.GetChartHttp(*chartPath)
+		*chartPath = utils.GetChartHttp(*chartPath, false)
 	}
 	// initialize model objs
 	models.InitFileList()
@@ -39,7 +39,7 @@ func main() {
 	for _, path := range dependentChartList {
 		localPath := path
 		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-			localPath = utils.GetChartHttp(path)
+			localPath = utils.GetChartHttp(path, true)
 		}
 		log.Println(path)
 		chartsToBeScannedForTplUsages = append(chartsToBeScannedForTplUsages, localPath)

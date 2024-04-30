@@ -22,18 +22,32 @@ var (
 
 // initialize the working directory
 func initWd() {
-	if ChartDir == "" {
-		currDir, err := os.Getwd()
-		if err != nil {
-			log.Fatalln("cannot initialize working directory. reason ", err.Error())
-		}
-		ChartDir = filepath.Join(currDir, "charts")
+	currDir, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("cannot initialize working directory. reason ", err.Error())
 	}
+	ChartDir = filepath.Join(currDir, "charts")
+}
+
+// initialize the working directory
+func initDependentWd() {
+
+	currDir, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("cannot initialize working directory. reason ", err.Error())
+	}
+	ChartDir = filepath.Join(currDir, "dependentCharts")
+
 }
 
 // GetChartHttp downloads and extracts the chart from the http url
-func GetChartHttp(chartUrl string) string {
-	initWd()
+func GetChartHttp(chartUrl string, isDependentPath bool) string {
+	if isDependentPath {
+		initDependentWd()
+	} else {
+		initWd()
+	}
+
 	log.Printf("starting downloading the of the file %s\n", chartUrl)
 	fileURL, err := url.Parse(chartUrl)
 	if err != nil {
