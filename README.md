@@ -1,4 +1,4 @@
-# helm-dangling-tpls :  Find Unused Helm Chart Templates
+# HelmTidy :  Find Unused Helm Chart Templates
 
 This Go based tool scans Helm charts and reports unused named templates within those charts. It can also handle library charts (charts imported by other charts).
 
